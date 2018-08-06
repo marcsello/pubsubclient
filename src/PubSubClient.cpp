@@ -102,18 +102,22 @@ PubSubClient::PubSubClient(const char* domain, uint16_t port, MQTT_CALLBACK_SIGN
 }
 
 boolean PubSubClient::connect(const char *id) {
-    return connect(id,NULL,NULL,0,0,0,0);
+    return connect(id,NULL,NULL,0,0,0,0,1);
 }
 
 boolean PubSubClient::connect(const char *id, const char *user, const char *pass) {
-    return connect(id,user,pass,0,0,0,0);
+    return connect(id,user,pass,0,0,0,0,1);
+}
+
+boolean PubSubClient::connect(const char *id, const char *user, const char *pass, boolean cleanSession) {
+    return connect(id,user,pass,0,0,0,0,cleanSession);
 }
 
 boolean PubSubClient::connect(const char *id, const char* willTopic, uint8_t willQos, boolean willRetain, const char* willMessage) {
-    return connect(id,NULL,NULL,willTopic,willQos,willRetain,willMessage);
+    return connect(id,NULL,NULL,willTopic,willQos,willRetain,willMessage,1);
 }
 
-boolean PubSubClient::connect(const char *id, const char *user, const char *pass, const char* willTopic, uint8_t willQos, boolean willRetain, const char* willMessage) {
+boolean PubSubClient::connect(const char *id, const char *user, const char *pass, const char* willTopic, uint8_t willQos, boolean willRetain, const char* willMessage, boolean cleanSession) {
     if (!connected()) {
         int result = 0;
 
@@ -139,11 +143,11 @@ boolean PubSubClient::connect(const char *id, const char *user, const char *pass
                 buffer[length++] = d[j];
             }
 
-            uint8_t v;
+            uint8_t v; // this is the 8th byte of the connect message
             if (willTopic) {
-                v = 0x06|(willQos<<3)|(willRetain<<5);
+                v = 0x04|(willQos<<3)|(willRetain<<5);
             } else {
-                v = 0x02;
+                v = 0x00;
             }
 
             if(user != NULL) {
@@ -153,6 +157,8 @@ boolean PubSubClient::connect(const char *id, const char *user, const char *pass
                     v = v|(0x80>>1);
                 }
             }
+
+            v = v|(cleanSession<<1); // add the cleanSession flag
 
             buffer[length++] = v;
 
